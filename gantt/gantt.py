@@ -990,8 +990,12 @@ class Task(object):
 
 
         elif scale == DRAW_WITH_QUATERLY_SCALE:
-            __LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
-            sys.exit(1)
+            #__LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
+            #sys.exit(1)
+            def _time_diff(end_date, start_date):
+                return int(dateutil.relativedelta.relativedelta(end_date, start_date).months / 3) + dateutil.relativedelta.relativedelta(end_date, start_date).years*4
+            def _time_diff_d(e, s):
+                return _time_diff(e, s) + 1
 
 
 
@@ -1449,8 +1453,12 @@ class Milestone(Task):
 
 
         elif scale == DRAW_WITH_QUATERLY_SCALE:
-            __LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
-            sys.exit(1)
+            #__LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
+            #sys.exit(1)
+            def _time_diff(end_date, start_date):
+                return int(dateutil.relativedelta.relativedelta(end_date, start_date).months /3) + dateutil.relativedelta.relativedelta(end_date, start_date).years*4
+            def _time_diff_d(e, s):
+                return _time_diff(e, s) + 1
 
 
 
@@ -1672,8 +1680,9 @@ class Project(object):
                 jour = start_date +  dateutil.relativedelta.relativedelta(months=+x)
             elif scale == DRAW_WITH_QUATERLY_SCALE:
                 # how many quarter do we need to draw ?
-                __LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
-                sys.exit(1)
+                #__LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
+                #sys.exit(1)
+                jour = start_date +  dateutil.relativedelta.relativedelta(months=+(3*x))
                 
             if not today is None and today == jour:
                 vlines.add(svgwrite.shapes.Rect(
@@ -1758,9 +1767,20 @@ class Project(object):
 
 
             elif scale == DRAW_WITH_QUATERLY_SCALE:
-                # how many quarter do we need to draw ?
-                __LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
-                sys.exit(1)
+                #__LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
+                #sys.exit(1)
+                # Month number
+                vlines.add(svgwrite.text.Text('Q{0}'.format((jour.month - 1) // 3 + 1 ),
+                                              insert=((x*10+1)*mm, 19*mm),
+                                              fill='black', stroke='black', stroke_width=0,
+                                              font_family=_font_attributes()['font_family'], font_size=15-3))
+                # Year
+                if (jour.month -1) // 3 == 0:
+                    vlines.add(svgwrite.text.Text('{0}'.format(jour.year),
+                                                  insert=((x*10+1)*mm, 5*mm),
+                                                  fill='#400000', stroke='#400000', stroke_width=0,
+                                                  font_family=_font_attributes()['font_family'], font_size=15+5, font_weight="bold"))
+
 
 
 
@@ -1849,8 +1869,13 @@ class Project(object):
                 maxx = dateutil.relativedelta.relativedelta(end_date, start_date).months + dateutil.relativedelta.relativedelta(end_date, start_date).years*12 + 1
         elif scale == DRAW_WITH_QUATERLY_SCALE:
             # how many quarter do we need to draw ?
-            __LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
-            sys.exit(1)
+            #__LOG__.critical('DRAW_WITH_QUATERLY_SCALE not implemented yet')
+            #sys.exit(1)
+            rel_del = dateutil.relativedelta.relativedelta(end_date, start_date)
+            if rel_del.days == 0 and rel_del.months %3 == 0:
+                maxx = int(rel_del.months /3) + rel_del.years*4
+            else:
+                maxx = int(rel_del.months / 3) + rel_del.years*4 + 1
             
 
 
