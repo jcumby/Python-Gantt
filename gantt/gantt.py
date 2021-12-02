@@ -631,7 +631,14 @@ class Task(object):
 
         self.start = start
         self.stop = stop
-        self.duration = duration
+        # Convert duration to relativedelta object
+        if isinstance(duration, dateutil.relativedelta.relativedelta):
+            self.duration = duration
+        elif isinstance(duration, int):
+            # Assume we are using integer days
+            self.duration = dateutil.relativedelta.relativedelta(days=duration)
+        else:
+            self.duration = duration
         self.color = color
         self.display = display
         self.state = state
@@ -742,8 +749,10 @@ class Task(object):
                 self.cache_start_date = prev_task_end
                 return self.cache_start_date
 
-        elif self.duration is None: # start and stop fixed
-            current_day = self.start
+        elif self.duration is None: # depends and stop fixed
+            #current_day = self.start
+            # Start with 1 day and expand to fit
+            current_day = self.stop - datetime.timedelta(days=1)
             # check depends
             if self.depends_of is not None:
                 prev_task_end = self.depends_of[0].end_date()
@@ -757,8 +766,9 @@ class Task(object):
                     # if t.end_date() > prev_task_end:
                     #     #__LOG__.debug('*** latest one {0} which end on {1}'.format(t.name, t.end_date()))
                     #     prev_task_end = t.end_date()
-                if prev_task_end > current_day:
+                if prev_task_end < current_day:
                     depend_start_date = prev_task_end
+                    self.cache_start_date = depend_start_date
                 else:
                     start = self.start
                     while start.weekday() in _not_worked_days() or start in VACATIONS:
@@ -770,6 +780,7 @@ class Task(object):
                     self.cache_start_date = depend_start_date           
             else:
                 # should be first day of start...
+                __LOG__.critical('**Something has gone logically wrong!')
                 self.cache_start_date = current_day            
 
             return self.cache_start_date
@@ -798,17 +809,19 @@ class Task(object):
         elif self.start is None and self.stop is not None: # stop and duration fixed
             # start date not setted, calculate from end_date + depends
             current_day = self.stop
+            ideal_start = self.stop - self.duration
             real_duration = 0
-            duration = self.duration 
+            duration = (self.stop - ideal_start).days
             while duration > 0:
                 if not (current_day.weekday() in _not_worked_days() or current_day in VACATIONS):
-                    real_duration = real_duration + 1
+                    real_duration += 1
                     duration -= 1
                 else:
-                    real_duration = real_duration + 1
+                    real_duration += 1
 
                 current_day = self.stop - datetime.timedelta(days=real_duration)
             current_day = self.stop - datetime.timedelta(days=real_duration - 1)
+            
 
             # check depends
             if self.depends_of is not None:
@@ -872,7 +885,7 @@ class Task(object):
             if real_end <= self.start_date():
                 current_day = self.start_date()
                 real_duration = 0
-                duration = self.duration   
+                duration = ((self.start_date() + self.duration) - self.start_date()).days
                 while duration > 1 or (current_day.weekday() in _not_worked_days() or current_day in VACATIONS):
                     if not (current_day.weekday() in _not_worked_days() or current_day in VACATIONS):
                         real_duration = real_duration + 1
@@ -898,7 +911,7 @@ class Task(object):
         if self.stop is None:
             current_day = self.start_date()
             real_duration = 0
-            duration = self.duration   
+            duration = ((self.start_date() + self.duration) - self.start_date()).days
             while duration > 1 or (current_day.weekday() in _not_worked_days() or current_day in VACATIONS):
                 if not (current_day.weekday() in _not_worked_days() or current_day in VACATIONS):
                     real_duration = real_duration + 1
