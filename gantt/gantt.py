@@ -46,11 +46,8 @@ import svgwrite
 mm = 3.543307
 cm = 35.43307
 
-mm_x = 3.543307
-mm_y = 3.543307
-
-cm_x = 35.43307
-cm_y = 35.43307
+global YSCALE
+YSCALE = 1
 
 # https://labix.org/python-dateutil
 import dateutil.relativedelta
@@ -158,9 +155,9 @@ def _font_attributes():
     Return dictionnary of font attributes
     Example :
     FONT_ATTR = {
+      'stroke_width': 0,
       'fill': 'black',
       'stroke': 'black',
-      'stroke_width': 0,
       'font_family': 'Verdana',
     }
     """
@@ -932,7 +929,7 @@ class Task(object):
         raise(ValueError)
         return None
 
-    def svg(self, prev_y=0, start=None, end=None, color=None, level=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False):
+    def svg(self, prev_y=0, start=None, end=None, color=None, level=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False, y_compact = False):
         """
         Return SVG for drawing this task.
 
@@ -1060,26 +1057,29 @@ class Task(object):
 
         svg = svgwrite.container.Group(id=self.name.replace(' ', '_'))
         svg.add(svgwrite.shapes.Rect(
-                insert=((x+1)*mm_x, (y+1)*mm_y),
-                size=((d-2)*mm_x, 8*mm_y),
+                insert=((x+1)*mm, (y+1)*mm*YSCALE),
+                size=((d-2)*mm, 8*mm*YSCALE),
                 fill=color,
                 stroke=color,
                 stroke_width=2,
                 opacity=0.85,
                 ))
-        svg.add(svgwrite.shapes.Rect(
-                insert=((x+1)*mm_x, (y+6)*mm_y),
-                size=(((d-2))*mm_x, 3*mm_y),
-                fill="#909090",
-                stroke=color,
-                stroke_width=1,
-                opacity=0.2,
-                ))
+                
+        if not y_compact:
+            # Only draw 'resources' bar if YSCALE allows
+            svg.add(svgwrite.shapes.Rect(
+                    insert=((x+1)*mm, (y+6)*mm*YSCALE),
+                    size=(((d-2))*mm, 3*mm*YSCALE),
+                    fill="#909090",
+                    stroke=color,
+                    stroke_width=1,
+                    opacity=0.2,
+                    ))
 
         if add_modified_begin_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+1)*mm_x, (y+1)*mm_y),
-                    size=(5*mm_x, 4*mm_y),
+                    insert=((x+1)*mm, (y+1)*mm*YSCALE),
+                    size=(5*mm, 4*mm*YSCALE),
                     fill="#0000FF",
                     stroke=color,
                     stroke_width=1,
@@ -1088,8 +1088,8 @@ class Task(object):
 
         if add_modified_end_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+d-7+1)*mm_x, (y+1)*mm_y),
-                    size=(5*mm_x, 4*mm_y),
+                    insert=((x+d-7+1)*mm, (y+1)*mm*YSCALE),
+                    size=(5*mm, 4*mm*YSCALE),
                     fill="#0000FF",
                     stroke=color,
                     stroke_width=1,
@@ -1099,8 +1099,8 @@ class Task(object):
 
         if add_begin_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+1)*mm_x, (y+1)*mm_y),
-                    size=(5*mm_x, 8*mm_y),
+                    insert=((x+1)*mm, (y+1)*mm*YSCALE),
+                    size=(5*mm, 8*mm*YSCALE),
                     fill="#000000",
                     stroke=color,
                     stroke_width=1,
@@ -1108,19 +1108,19 @@ class Task(object):
                     ))
         if add_end_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+d-7+1)*mm, (y+1)*mm),
-                    size=(5*mm, 8*mm),
+                    insert=((x+d-7+1)*mm, (y+1)*mm*YSCALE),
+                    size=(5*mm, 8*mm*YSCALE),
                     fill="#000000",
                     stroke=color,
                     stroke_width=1,
                     opacity=0.2,
                     ))
 
-        if self.percent_done is not None and self.percent_done > 0:
+        if self.percent_done is not None and self.percent_done > 0 and not y_compact:
             # Bar shade
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+1)*mm, (y+6)*mm),
-                    size=(((d-2)*self.percent_done/100)*mm, 3*mm),
+                    insert=((x+1)*mm, (y+6)*mm*YSCALE),
+                    size=(((d-2)*self.percent_done/100)*mm, 3*mm*YSCALE),
                     fill="#F08000",
                     stroke=color,
                     stroke_width=1,
@@ -1132,11 +1132,14 @@ class Task(object):
         else:
             tx = 5
             
-        svg.add(svgwrite.text.Text(self.fullname, insert=((tx)*mm, (y + 5)*mm), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15))
+        if not y_compact:
+            svg.add(svgwrite.text.Text(self.fullname, insert=((tx)*mm, (y + 5)*mm*YSCALE), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15))
+        else:
+            svg.add(svgwrite.text.Text(self.fullname, insert=((tx)*mm, (y + 8)*mm*YSCALE), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15))
 
-        if self.resources is not None:
+        if self.resources is not None and not y_compact:
             t = " / ".join(["{0}".format(r.name) for r in self.resources])
-            svg.add(svgwrite.text.Text("{0}".format(t), insert=((x+2)*mm, (y + 8.5)*mm), fill='purple', stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15-5))
+            svg.add(svgwrite.text.Text("{0}".format(t), insert=((x+2)*mm, (y + 8.5)*mm*YSCALE), fill='purple', stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15-5))
 
 
         return (svg, 1)
@@ -1161,8 +1164,8 @@ class Task(object):
                         if t.drawn_x_end_coord < self.drawn_x_begin_coord:
                             # horizontal line
                             svg.add(svgwrite.shapes.Line(
-                                    start=((t.drawn_x_end_coord + 9)*mm, (t.drawn_y_coord + 5)*mm), 
-                                    end=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm), 
+                                    start=((t.drawn_x_end_coord + 9)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                    end=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
                                     stroke='black',
                                     stroke_dasharray='5,3',
                                     ))
@@ -1172,8 +1175,8 @@ class Task(object):
                             svg.add(marker)
                             # vertical line
                             eline = svgwrite.shapes.Line(
-                                start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm), 
-                                end=((self.drawn_x_begin_coord)*mm, (self.drawn_y_coord + 5)*mm), 
+                                start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                end=((self.drawn_x_begin_coord)*mm, (self.drawn_y_coord + 5)*mm*YSCALE), 
                                 stroke='black',
                                 stroke_dasharray='5,3',
                                 )
@@ -1183,22 +1186,22 @@ class Task(object):
                         else:
                             # horizontal line
                             svg.add(svgwrite.shapes.Line(
-                                    start=((t.drawn_x_end_coord + 9)*mm, (t.drawn_y_coord + 5)*mm), 
-                                    end=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 5)*mm), 
+                                    start=((t.drawn_x_end_coord + 9)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                    end=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
                                     stroke='black',
                                     stroke_dasharray='5,3',
                                     ))
                             # vertical
                             svg.add(svgwrite.shapes.Line(
-                                start=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 5)*mm), 
-                                end=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 15)*mm), 
+                                start=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                end=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 15)*mm*YSCALE), 
                                 stroke='black',
                                 stroke_dasharray='5,3',
                                 ))
                             # horizontal line
                             svg.add(svgwrite.shapes.Line(
-                                    start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 15)*mm), 
-                                    end=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 15)*mm), 
+                                    start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 15)*mm*YSCALE), 
+                                    end=((self.drawn_x_begin_coord + 10)*mm, (t.drawn_y_coord + 15)*mm*YSCALE), 
                                     stroke='black',
                                     stroke_dasharray='5,3',
                                     ))
@@ -1208,8 +1211,8 @@ class Task(object):
                             svg.add(marker)
                             # vertical line
                             eline = svgwrite.shapes.Line(
-                                start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 15)*mm), 
-                                end=((self.drawn_x_begin_coord)*mm, (self.drawn_y_coord + 5)*mm), 
+                                start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 15)*mm*YSCALE), 
+                                end=((self.drawn_x_begin_coord)*mm, (self.drawn_y_coord + 5)*mm*YSCALE), 
                                 stroke='black',
                                 stroke_dasharray='5,3',
                                 )
@@ -1220,8 +1223,8 @@ class Task(object):
                     if not (t.drawn_x_end_coord is None or t.drawn_y_coord is None or self.drawn_x_begin_coord is None) and prj.is_in_project(t):
                         # horizontal line
                         svg.add(svgwrite.shapes.Line(
-                                start=((t.drawn_x_end_coord - 2)*mm, (t.drawn_y_coord + 5)*mm), 
-                                end=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm), 
+                                start=((t.drawn_x_end_coord - 2)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                end=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
                                 stroke='black',
                                 stroke_dasharray='5,3',
                                 ))
@@ -1231,8 +1234,8 @@ class Task(object):
                         svg.add(marker)
                         # vertical line
                         eline = svgwrite.shapes.Line(
-                            start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm), 
-                            end=((self.drawn_x_begin_coord)*mm, (self.drawn_y_coord + 5)*mm), 
+                            start=((self.drawn_x_begin_coord)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                            end=((self.drawn_x_begin_coord)*mm, (self.drawn_y_coord + 5)*mm*YSCALE), 
                             stroke='black',
                             stroke_dasharray='5,3',
                             )
@@ -1394,7 +1397,7 @@ class Milestone(Task):
         return self.start_date()
 
 
-    def svg(self, prev_y=0, start=None, end=None, color=None, level=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False):
+    def svg(self, prev_y=0, start=None, end=None, color=None, level=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False, y_compact = False):
         """
         Return SVG for drawing this milestone.
 
@@ -1499,10 +1502,10 @@ class Milestone(Task):
         # 3.543307 is for conversion from mm to pt units !
         svg.add(svgwrite.shapes.Polygon(
                 points=[
-                    ((x+5)*mm, (y+2)*mm),
-                    ((x+8)*mm, (y+5)*mm),
-                    ((x+5)*mm, (y+8)*mm),
-                    ((x+2)*mm, (y+5)*mm)
+                    ((x+5)*mm, (y+2)*mm*YSCALE),
+                    ((x+8)*mm, (y+5)*mm*YSCALE),
+                    ((x+5)*mm, (y+8)*mm*YSCALE),
+                    ((x+2)*mm, (y+5)*mm*YSCALE)
                 ],
                 fill=color,
                 stroke=color,
@@ -1517,7 +1520,7 @@ class Milestone(Task):
         else:
             tx = 5
             
-        svg.add(svgwrite.text.Text(self.fullname, insert=((tx)*mm, (y + 5)*mm), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15))
+        svg.add(svgwrite.text.Text(self.fullname, insert=((tx)*mm, (y + 5)*mm*YSCALE), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15))
 
 
         return (svg, 2)
@@ -1541,8 +1544,8 @@ class Milestone(Task):
                     if not (t.drawn_x_end_coord is None or t.drawn_y_coord is None or self.drawn_x_begin_coord is None) and prj.is_in_project(t):
                         # horizontal line
                         svg.add(svgwrite.shapes.Line(
-                                start=((t.drawn_x_end_coord + 9)*mm, (t.drawn_y_coord + 5)*mm), 
-                                end=((self.drawn_x_begin_coord + 5)*mm, (t.drawn_y_coord + 5)*mm), 
+                                start=((t.drawn_x_end_coord + 9)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                end=((self.drawn_x_begin_coord + 5)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
                                 stroke='black',
                                 stroke_dasharray='5,3',
                                 ))
@@ -1552,8 +1555,8 @@ class Milestone(Task):
                         svg.add(marker)
                         # vertical line
                         eline = svgwrite.shapes.Line(
-                            start=((self.drawn_x_begin_coord + 5)*mm, (t.drawn_y_coord + 5)*mm), 
-                            end=((self.drawn_x_begin_coord+5)*mm, (self.drawn_y_coord)*mm), 
+                            start=((self.drawn_x_begin_coord + 5)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                            end=((self.drawn_x_begin_coord+5)*mm, (self.drawn_y_coord)*mm*YSCALE), 
                             stroke='black',
                             stroke_dasharray='5,3',
                             )
@@ -1564,8 +1567,8 @@ class Milestone(Task):
                     if not (t.drawn_x_end_coord is None or t.drawn_y_coord is None or self.drawn_x_begin_coord is None) and prj.is_in_project(t):
                         # horizontal line
                         svg.add(svgwrite.shapes.Line(
-                                start=((t.drawn_x_end_coord - 2)*mm, (t.drawn_y_coord + 5)*mm), 
-                                end=((self.drawn_x_begin_coord + 5)*mm, (t.drawn_y_coord + 5)*mm), 
+                                start=((t.drawn_x_end_coord - 2)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
+                                end=((self.drawn_x_begin_coord + 5)*mm, (t.drawn_y_coord + 5)*mm*YSCALE), 
                                 stroke='black',
                                 stroke_dasharray='5,3',
                                 ))
@@ -1575,8 +1578,8 @@ class Milestone(Task):
                         svg.add(marker)
                         # vertical line
                         eline = svgwrite.shapes.Line(
-                            start=((self.drawn_x_begin_coord+5)*mm, (t.drawn_y_coord+5)*mm), 
-                            end=((self.drawn_x_begin_coord+5)*mm, (self.drawn_y_coord + 0)*mm), 
+                            start=((self.drawn_x_begin_coord+5)*mm, (t.drawn_y_coord+5)*mm*YSCALE), 
+                            end=((self.drawn_x_begin_coord+5)*mm, (self.drawn_y_coord + 0)*mm*YSCALE), 
                             stroke='black',
                             stroke_dasharray='5,3',
                             )
@@ -1689,7 +1692,7 @@ class Project(object):
 
         vlines = dwg.add(svgwrite.container.Group(id='vlines', stroke='lightgray'))
         for x in range(maxx):
-            vlines.add(svgwrite.shapes.Line(start=(x*cm, 2*cm), end=(x*cm, (maxy+2)*cm)))
+            vlines.add(svgwrite.shapes.Line(start=(x*cm, 2*cm*YSCALE), end=(x*cm, (maxy+2)*cm*YSCALE)))
             if scale == DRAW_WITH_DAILY_SCALE:
                 jour = start_date + datetime.timedelta(days=x)
             elif scale == DRAW_WITH_WEEKLY_SCALE:
@@ -1704,8 +1707,8 @@ class Project(object):
                 
             if not today is None and today == jour:
                 vlines.add(svgwrite.shapes.Rect(
-                    insert=((x+0.4)*cm, 2*cm),
-                    size=(0.2*cm, (maxy)*cm),
+                    insert=((x+0.4)*cm, 2*cm*YSCALE),
+                    size=(0.2*cm, (maxy)*cm*YSCALE),
                     fill='#76e9ff',
                     stroke='lightgray',
                     stroke_width=0,
@@ -1716,8 +1719,8 @@ class Project(object):
                 # draw vacations
                 if (start_date + datetime.timedelta(days=x)).weekday() in _not_worked_days() or (start_date + datetime.timedelta(days=x)) in VACATIONS:
                     vlines.add(svgwrite.shapes.Rect(
-                        insert=(x*cm, 2*cm),
-                        size=(1*cm, maxy*cm),
+                        insert=(x*cm, 2*cm*YSCALE),
+                        size=(1*cm, maxy*cm*YSCALE),
                         fill='gray',
                         stroke='lightgray',
                         stroke_width=1,
@@ -1726,7 +1729,7 @@ class Project(object):
 
                 # Current day
                 vlines.add(svgwrite.text.Text('{1} {0:02}'.format(jour.day, cal[jour.weekday()][0]),
-                                              insert=((x*10+1)*mm, 19*mm),
+                                              insert=((x*10+1)*mm, 19*mm*YSCALE),
                                               fill='black', stroke='black', stroke_width=0,
                                               font_family=_font_attributes()['font_family'], font_size=15-3))
                 # Year
@@ -1739,14 +1742,14 @@ class Project(object):
                 # Month name
                 if jour.day == 1:
                     vlines.add(svgwrite.text.Text('{0}'.format(jour.strftime("%B")),
-                                                  insert=((x*10+1)*mm, 10*mm),
+                                                  insert=((x*10+1)*mm, 10*mm*YSCALE),
                                                   fill='#800000', stroke='#800000', stroke_width=0,
                                                   font_family=_font_attributes()['font_family'], font_size=15+3,
                                                   font_weight="bold"))
                 # Week number
                 if jour.weekday() == 0:
                     vlines.add(svgwrite.text.Text('{0:02}'.format(jour.isocalendar()[1]),
-                                                  insert=((x*10+1)*mm, 15*mm),
+                                                  insert=((x*10+1)*mm, 15*mm*YSCALE),
                                                   fill='black', stroke='black', stroke_width=0,
                                                   font_family=_font_attributes()['font_family'],
                                                   font_size=15+1,
@@ -1762,18 +1765,18 @@ class Project(object):
                 # Month name
                 if jour.day <= 7:
                     vlines.add(svgwrite.text.Text('{0}'.format(jour.strftime("%B")),
-                                                  insert=((x*10+1)*mm, 10*mm),
+                                                  insert=((x*10+1)*mm, 10*mm*YSCALE),
                                                   fill='#800000', stroke='#800000', stroke_width=0,
                                                   font_family=_font_attributes()['font_family'], font_size=15+3, font_weight="bold"))
                 vlines.add(svgwrite.text.Text('{0:02}'.format(jour.isocalendar()[1]),
-                                              insert=((x*10+1)*mm, 15*mm),
+                                              insert=((x*10+1)*mm, 15*mm*YSCALE),
                                               fill='black', stroke='black', stroke_width=0,
                                               font_family=_font_attributes()['font_family'], font_size=15+1, font_weight="bold"))
 
             elif scale == DRAW_WITH_MONTHLY_SCALE:
                 # Month number
                 vlines.add(svgwrite.text.Text('{0}'.format(jour.strftime("%m")),
-                                              insert=((x*10+1)*mm, 19*mm),
+                                              insert=((x*10+1)*mm, 19*mm*YSCALE),
                                               fill='black', stroke='black', stroke_width=0,
                                               font_family=_font_attributes()['font_family'], font_size=15-3))
                 # Year
@@ -1789,7 +1792,7 @@ class Project(object):
                 #sys.exit(1)
                 # Month number
                 vlines.add(svgwrite.text.Text('Q{0}'.format((jour.month - 1) // 3 + 1 ),
-                                              insert=((x*10+1)*mm, 19*mm),
+                                              insert=((x*10+1)*mm, 19*mm*YSCALE),
                                               fill='black', stroke='black', stroke_width=0,
                                               font_family=_font_attributes()['font_family'], font_size=15-3))
                 # Year
@@ -1803,21 +1806,30 @@ class Project(object):
 
 
 
-        vlines.add(svgwrite.shapes.Line(start=(maxx*cm, 2*cm), end=(maxx*cm, (maxy+2)*cm)))
+        vlines.add(svgwrite.shapes.Line(start=(maxx*cm, 2*cm*YSCALE), end=(maxx*cm, (maxy+2)*cm*YSCALE)))
 
 
         hlines = dwg.add(svgwrite.container.Group(id='hlines', stroke='lightgray'))
 
-        dwg.add(svgwrite.shapes.Line(start=((0)*cm, (2)*cm), end=((maxx)*cm, (2)*cm), stroke='black'))
-        dwg.add(svgwrite.shapes.Line(start=((0)*cm, (maxy+2)*cm), end=((maxx)*cm, (maxy+2)*cm), stroke='black'))
+        dwg.add(svgwrite.shapes.Line(start=((0)*cm, (2)*cm*YSCALE), end=((maxx)*cm, (2)*cm*YSCALE), stroke='black'))
+        dwg.add(svgwrite.shapes.Line(start=((0)*cm, (maxy+2)*cm*YSCALE), end=((maxx)*cm, (maxy+2)*cm*YSCALE), stroke='black'))
 
         for y in range(2, maxy+3):
-            hlines.add(svgwrite.shapes.Line(start=(0*cm, y*cm), end=(maxx*cm, y*cm)))
+            hlines.add(svgwrite.shapes.Line(start=(0*cm, y*cm*YSCALE), end=(maxx*cm, y*cm*YSCALE)))
 
         return dwg
 
 
-    def make_svg_for_tasks(self, filename, today=None, start=None, end=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False, custom_colors = None):
+    def make_svg_for_tasks(self,
+                           filename,
+                           today=None,
+                           start=None,
+                           end=None,
+                           scale=DRAW_WITH_DAILY_SCALE,
+                           title_align_on_left=False,
+                           custom_colors = None,
+                           yscale=1
+                           ):
         """
         Draw gantt of tasks and output it to filename. If start or end are
         given, use them as reference, otherwise use project first and last day
@@ -1852,10 +1864,16 @@ class Project(object):
             __LOG__.critical('start date {0} > end_date {1}'.format(start_date, end_date))
             sys.exit(1)
 
-
+        if yscale < 0.75:
+            y_compact = True
+        else:
+            y_compact = False
+            
+        global YSCALE
+        YSCALE = yscale
 
         ldwg = svgwrite.container.Group()
-        psvg, pheight = self.svg(prev_y=2, start=start_date, end=end_date, color = self.color, scale=scale, title_align_on_left=title_align_on_left)
+        psvg, pheight = self.svg(prev_y=2, start=start_date, end=end_date, color = self.color, scale=scale, title_align_on_left=title_align_on_left, y_compact = y_compact)
         if psvg is not None:
             ldwg.add(psvg)
             
@@ -1909,8 +1927,8 @@ class Project(object):
                 dwg.defs.add(color)
 
         dwg.add(svgwrite.shapes.Rect(
-                    insert=(0*cm, 0*cm),
-                    size=((maxx+1)*cm, (pheight+3)*cm),
+                    insert=(0*cm, 0*cm*YSCALE),
+                    size=((maxx+1)*cm, (pheight+3)*cm*YSCALE),
                     fill='white',
                     stroke_width=0,
                     opacity=1
@@ -1921,7 +1939,7 @@ class Project(object):
 
         dwg.add(self._svg_calendar(maxx, pheight, start_date, today, scale))
         dwg.add(ldwg)
-        dwg.save(width=(maxx+1)*cm, height=(pheight+3)*cm)
+        dwg.save(width=(maxx+1)*cm, height=(pheight+3)*cm*YSCALE)
         return
 
     def make_svg_for_resources(self, filename, today=None, start=None, end=None, resources=None, one_line_for_tasks=False, filter='', scale=DRAW_WITH_DAILY_SCALE):
@@ -1994,8 +2012,8 @@ class Project(object):
         if not one_line_for_tasks:
             ldwg.add(
                 svgwrite.shapes.Line(
-                    start=((0)*cm, (2)*cm), 
-                    end=((maxx+1)*cm, (2)*cm), 
+                    start=((0)*cm, (2)*cm*YSCALE), 
+                    end=((maxx+1)*cm, (2)*cm*YSCALE), 
                     stroke='black',
                     ))
 
@@ -2009,7 +2027,7 @@ class Project(object):
                 continue
 
             ress = svgwrite.container.Group()
-            ress.add(svgwrite.text.Text('{0}'.format(r.fullname), insert=(3*mm, (nline*10+7)*mm), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15+3))
+            ress.add(svgwrite.text.Text('{0}'.format(r.fullname), insert=(3*mm, (nline*10+7)*mm*YSCALE), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15+3))
             #ldwg.add(ress)
 
 
@@ -2026,8 +2044,8 @@ class Project(object):
                 # Vacations
                 if cday.weekday() not in _not_worked_days() and cday not in VACATIONS and not r.is_available(cday):
                      vac.add(svgwrite.shapes.Rect(
-                            insert=(((cday - start_date).days * 10 + 1)*mm, ((conflict_display_line)*10+1)*mm),
-                            size=(4*mm, 8*mm),
+                            insert=(((cday - start_date).days * 10 + 1)*mm, ((conflict_display_line)*10+1)*mm*YSCALE),
+                            size=(4*mm, 8*mm*YSCALE),
                             fill="#008000",
                             stroke="#008000",
                             stroke_width=1,
@@ -2037,8 +2055,8 @@ class Project(object):
                 # Overcharge
                 if cday.weekday() not in _not_worked_days() and cday not in VACATIONS and cday in overcharged_days:
                     conflicts.add(svgwrite.shapes.Rect(
-                        insert=(((cday - start_date).days * 10 + 1 + 4)*mm, ((conflict_display_line)*10+1)*mm),
-                        size=(4*mm, 8*mm),
+                        insert=(((cday - start_date).days * 10 + 1 + 4)*mm, ((conflict_display_line)*10+1)*mm*YSCALE),
+                        size=(4*mm, 8*mm*YSCALE),
                         fill="#AA0000",
                         stroke="#AA0000",
                         stroke_width=1,
@@ -2070,8 +2088,8 @@ class Project(object):
                 if not one_line_for_tasks:
                     ldwg.add(
                         svgwrite.shapes.Line(
-                            start=((0)*cm, (nline)*cm), 
-                            end=((maxx+1)*cm, (nline)*cm), 
+                            start=((0)*cm, (nline)*cm*YSCALE), 
+                            end=((maxx+1)*cm, (nline)*cm*YSCALE), 
                             stroke='black',
                             ))
                 
@@ -2080,23 +2098,23 @@ class Project(object):
                     nline += 1
                     ldwg.add(
                         svgwrite.shapes.Line(
-                        start=((0)*cm, (nline)*cm), 
-                        end=((maxx+1)*cm, (nline)*cm), 
+                        start=((0)*cm, (nline)*cm*YSCALE), 
+                        end=((maxx+1)*cm, (nline)*cm*YSCALE), 
                         stroke='black',
                         ))
 
 
         dwg = _my_svgwrite_drawing_wrapper(filename, debug=True)
         dwg.add(svgwrite.shapes.Rect(
-                    insert=(0*cm, 0*cm),
-                    size=((maxx+1)*cm, (nline+1)*cm),
+                    insert=(0*cm, 0*cm*YSCALE),
+                    size=((maxx+1)*cm, (nline+1)*cm*YSCALE),
                     fill='white',
                     stroke_width=0,
                     opacity=1
                     ))
         dwg.add(self._svg_calendar(maxx, nline-2, start_date, today, scale))
         dwg.add(ldwg)
-        dwg.save(width=(maxx+1)*cm, height=(nline+1)*cm)
+        dwg.save(width=(maxx+1)*cm, height=(nline+1)*cm*YSCALE)
         return {
             'conflicts_vacations': conflicts_vacations, 
             'conflicts_tasks':conflicts_tasks
@@ -2132,7 +2150,7 @@ class Project(object):
                 last = t.end_date()
         return last
 
-    def svg(self, prev_y=0, start=None, end=None, color=None, level=0, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False):
+    def svg(self, prev_y=0, start=None, end=None, color=None, level=0, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False, y_compact = False):
         """
         Return (SVG code, number of lines drawn) for the project. Draws all
         tasks and add project name with a purple bar on the left side.
@@ -2159,7 +2177,7 @@ class Project(object):
         prj = svgwrite.container.Group()
 
         for t in self.tasks:
-            trepr, theight = t.svg(cy, start=start, end=end, color=color, level=level+1, scale=scale, title_align_on_left=title_align_on_left)
+            trepr, theight = t.svg(cy, start=start, end=end, color=color, level=level+1, scale=scale, title_align_on_left=title_align_on_left, y_compact = y_compact)
             if trepr is not None:
                 prj.add(trepr)
                 cy += theight
@@ -2171,11 +2189,11 @@ class Project(object):
             #     or (self.start_date() >= start and (self.end_date() <= end or self.start_date() <= end))) or level == 1: 
             if ((self.start_date() >= start and self.end_date() <= end) 
                 or ((self.end_date() >=start and self.start_date() <= end))) or level == 1: 
-                fprj.add(svgwrite.text.Text('{0}'.format(self.name), insert=((6*level+3)*mm, ((prev_y)*10+7)*mm), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15+3))
+                fprj.add(svgwrite.text.Text('{0}'.format(self.name), insert=((6*level+3)*mm, ((prev_y)*10+7)*mm*YSCALE), fill=_font_attributes()['fill'], stroke=_font_attributes()['stroke'], stroke_width=_font_attributes()['stroke_width'], font_family=_font_attributes()['font_family'], font_size=15+3))
 
                 fprj.add(svgwrite.shapes.Rect(
-                        insert=((6*level+0.8)*mm, (prev_y+0.5)*cm),
-                        size=(0.2*cm, ((cy-prev_y-1)+0.4)*cm),
+                        insert=((6*level+0.8)*mm, (prev_y+0.5)*cm*YSCALE),
+                        size=(0.2*cm, ((cy-prev_y-1)+0.4)*cm*YSCALE),
                         fill='purple',
                         stroke='lightgray',
                         stroke_width=0,
