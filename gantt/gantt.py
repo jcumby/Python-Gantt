@@ -46,6 +46,11 @@ import svgwrite
 mm = 3.543307
 cm = 35.43307
 
+mm_x = 3.543307
+mm_y = 3.543307
+
+cm_x = 35.43307
+cm_y = 35.43307
 
 # https://labix.org/python-dateutil
 import dateutil.relativedelta
@@ -1055,16 +1060,16 @@ class Task(object):
 
         svg = svgwrite.container.Group(id=self.name.replace(' ', '_'))
         svg.add(svgwrite.shapes.Rect(
-                insert=((x+1)*mm, (y+1)*mm),
-                size=((d-2)*mm, 8*mm),
+                insert=((x+1)*mm_x, (y+1)*mm_y),
+                size=((d-2)*mm_x, 8*mm_y),
                 fill=color,
                 stroke=color,
                 stroke_width=2,
                 opacity=0.85,
                 ))
         svg.add(svgwrite.shapes.Rect(
-                insert=((x+1)*mm, (y+6)*mm),
-                size=(((d-2))*mm, 3*mm),
+                insert=((x+1)*mm_x, (y+6)*mm_y),
+                size=(((d-2))*mm_x, 3*mm_y),
                 fill="#909090",
                 stroke=color,
                 stroke_width=1,
@@ -1073,8 +1078,8 @@ class Task(object):
 
         if add_modified_begin_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+1)*mm, (y+1)*mm),
-                    size=(5*mm, 4*mm),
+                    insert=((x+1)*mm_x, (y+1)*mm_y),
+                    size=(5*mm_x, 4*mm_y),
                     fill="#0000FF",
                     stroke=color,
                     stroke_width=1,
@@ -1083,8 +1088,8 @@ class Task(object):
 
         if add_modified_end_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+d-7+1)*mm, (y+1)*mm),
-                    size=(5*mm, 4*mm),
+                    insert=((x+d-7+1)*mm_x, (y+1)*mm_y),
+                    size=(5*mm_x, 4*mm_y),
                     fill="#0000FF",
                     stroke=color,
                     stroke_width=1,
@@ -1094,8 +1099,8 @@ class Task(object):
 
         if add_begin_mark:
             svg.add(svgwrite.shapes.Rect(
-                    insert=((x+1)*mm, (y+1)*mm),
-                    size=(5*mm, 8*mm),
+                    insert=((x+1)*mm_x, (y+1)*mm_y),
+                    size=(5*mm_x, 8*mm_y),
                     fill="#000000",
                     stroke=color,
                     stroke_width=1,
@@ -1812,7 +1817,7 @@ class Project(object):
         return dwg
 
 
-    def make_svg_for_tasks(self, filename, today=None, start=None, end=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False):
+    def make_svg_for_tasks(self, filename, today=None, start=None, end=None, scale=DRAW_WITH_DAILY_SCALE, title_align_on_left=False, custom_colors = None):
         """
         Draw gantt of tasks and output it to filename. If start or end are
         given, use them as reference, otherwise use project first and last day
@@ -1846,6 +1851,8 @@ class Project(object):
         if start_date > end_date:
             __LOG__.critical('start date {0} > end_date {1}'.format(start_date, end_date))
             sys.exit(1)
+
+
 
         ldwg = svgwrite.container.Group()
         psvg, pheight = self.svg(prev_y=2, start=start_date, end=end_date, color = self.color, scale=scale, title_align_on_left=title_align_on_left)
@@ -1894,6 +1901,13 @@ class Project(object):
 
 
         dwg = _my_svgwrite_drawing_wrapper(filename, debug=True)
+        
+        # Register custom colour/pattern definitions in main drawing
+        if custom_colors is not None:
+            for color in custom_colors:
+                assert isinstance(color, (svgwrite.pattern.Pattern, svgwrite.gradients.LinearGradient, svgwrite.gradients.RadialGradient)), "Custom colors should be valid svgwrite patterns or gradients"
+                dwg.defs.add(color)
+
         dwg.add(svgwrite.shapes.Rect(
                     insert=(0*cm, 0*cm),
                     size=((maxx+1)*cm, (pheight+3)*cm),
@@ -1901,6 +1915,9 @@ class Project(object):
                     stroke_width=0,
                     opacity=1
                     ))
+
+
+
 
         dwg.add(self._svg_calendar(maxx, pheight, start_date, today, scale))
         dwg.add(ldwg)
