@@ -1415,7 +1415,7 @@ class Task(object):
                                         (self.drawn_x_begin_coord) * mm,
                                         (t.drawn_y_coord + 5) * mm * YSCALE,
                                     ),
-                                    stroke="black",
+                                    stroke="darkgray",
                                     stroke_dasharray="5,3",
                                 )
                             )
@@ -1443,7 +1443,7 @@ class Task(object):
                                     (self.drawn_x_begin_coord) * mm,
                                     (self.drawn_y_coord + 5) * mm * YSCALE,
                                 ),
-                                stroke="black",
+                                stroke="darkgray",
                                 stroke_dasharray="5,3",
                             )
                             eline["marker-end"] = marker.get_funciri()
@@ -1461,7 +1461,7 @@ class Task(object):
                                         (self.drawn_x_begin_coord + 10) * mm,
                                         (t.drawn_y_coord + 5) * mm * YSCALE,
                                     ),
-                                    stroke="black",
+                                    stroke="darkgray",
                                     stroke_dasharray="5,3",
                                 )
                             )
@@ -1476,7 +1476,7 @@ class Task(object):
                                         (self.drawn_x_begin_coord + 10) * mm,
                                         (t.drawn_y_coord + 15) * mm * YSCALE,
                                     ),
-                                    stroke="black",
+                                    stroke="darkgray",
                                     stroke_dasharray="5,3",
                                 )
                             )
@@ -1491,7 +1491,7 @@ class Task(object):
                                         (self.drawn_x_begin_coord + 10) * mm,
                                         (t.drawn_y_coord + 15) * mm * YSCALE,
                                     ),
-                                    stroke="black",
+                                    stroke="darkgray",
                                     stroke_dasharray="5,3",
                                 )
                             )
@@ -1519,7 +1519,7 @@ class Task(object):
                                     (self.drawn_x_begin_coord) * mm,
                                     (self.drawn_y_coord + 5) * mm * YSCALE,
                                 ),
-                                stroke="black",
+                                stroke="darkgray",
                                 stroke_dasharray="5,3",
                             )
                             eline["marker-end"] = marker.get_funciri()
@@ -1542,7 +1542,7 @@ class Task(object):
                                     (self.drawn_x_begin_coord) * mm,
                                     (t.drawn_y_coord + 5) * mm * YSCALE,
                                 ),
-                                stroke="black",
+                                stroke="darkgray",
                                 stroke_dasharray="5,3",
                             )
                         )
@@ -1564,7 +1564,7 @@ class Task(object):
                                 (self.drawn_x_begin_coord) * mm,
                                 (self.drawn_y_coord + 5) * mm * YSCALE,
                             ),
-                            stroke="black",
+                            stroke="darkgray",
                             stroke_dasharray="5,3",
                         )
                         eline["marker-end"] = marker.get_funciri()
@@ -1885,19 +1885,19 @@ class Milestone(Task):
                 fill=color,
                 stroke=color,
                 stroke_width=2,
-                opacity=0.85,
+                opacity=0.65,
             )
         )
 
         if not title_align_on_left:
-            tx = x + 2
+            tx = x + 5
         else:
             tx = 5
 
         svg.add(
             svgwrite.text.Text(
                 self.fullname,
-                insert=((tx) * mm, (y + 5) * mm * YSCALE),
+                insert=((tx) * mm, (y + 6.2) * mm * YSCALE),
                 fill=_font_attributes()["fill"],
                 stroke=_font_attributes()["stroke"],
                 stroke_width=_font_attributes()["stroke_width"],
@@ -1906,7 +1906,7 @@ class Milestone(Task):
             )
         )
 
-        return (svg, 2)
+        return (svg, 1)
 
     def svg_dependencies(self, prj):
         """
@@ -1943,7 +1943,7 @@ class Milestone(Task):
                                     (self.drawn_x_begin_coord + 5) * mm,
                                     (t.drawn_y_coord + 5) * mm * YSCALE,
                                 ),
-                                stroke="black",
+                                stroke="darkgray",
                                 stroke_dasharray="5,3",
                             )
                         )
@@ -1965,7 +1965,7 @@ class Milestone(Task):
                                 (self.drawn_x_begin_coord + 5) * mm,
                                 (self.drawn_y_coord) * mm * YSCALE,
                             ),
-                            stroke="black",
+                            stroke="darkgray",
                             stroke_dasharray="5,3",
                         )
                         eline["marker-end"] = marker.get_funciri()
@@ -1988,7 +1988,7 @@ class Milestone(Task):
                                     (self.drawn_x_begin_coord + 5) * mm,
                                     (t.drawn_y_coord + 5) * mm * YSCALE,
                                 ),
-                                stroke="black",
+                                stroke="darkgray",
                                 stroke_dasharray="5,3",
                             )
                         )
@@ -2010,7 +2010,7 @@ class Milestone(Task):
                                 (self.drawn_x_begin_coord + 5) * mm,
                                 (self.drawn_y_coord + 0) * mm * YSCALE,
                             ),
-                            stroke="black",
+                            stroke="darkgray",
                             stroke_dasharray="5,3",
                         )
                         eline["marker-end"] = marker.get_funciri()
